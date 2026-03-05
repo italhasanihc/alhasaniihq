@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Al-Hasna Group — Excellence in Every Endeavor</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════ NAVBAR ═══════════════════════════════ -->
+  <div id="navbar">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <img src="alhasna-logo.png" alt="Al-Hasna Group" />
+      </div>
+      <div class="nav-menu" id="navMenu">
+        <a href="#about" class="nav-link">About Us</a>
+        <a href="#vision" class="nav-link">Our Vision</a>
+        <a href="#brands" class="nav-link">Our Brands</a>
+        <a href="#services" class="nav-link">Services</a>
+        <a href="#team" class="nav-link">Our Team</a>
+        <a href="#contact" class="nav-link nav-link--cta">Contact Us</a>
+      </div>
+      <div class="nav-hamburger" id="hamburger" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ HERO ════════════════════════════════ -->
+  <div id="intro">
+
+    <!-- Particle canvas -->
+    <canvas id="introCanvas" aria-hidden="true"></canvas>
+
+    <!-- Multi-layer atmospheric background -->
+    <div class="hero-bg-layers" aria-hidden="true">
+      <div class="hbl-vignette"></div>
+      <div class="hbl-radial"></div>
+      <div class="hbl-lines"></div>
+    </div>
+
+    <!-- CENTER STAGE: logo as hero -->
+    <div class="hero-stage">
+
+      <!-- Outer glow ring (animated) -->
+      <div class="hero-glow-ring hero-glow-ring--outer" aria-hidden="true"></div>
+      <div class="hero-glow-ring hero-glow-ring--inner" aria-hidden="true"></div>
+
+      <!-- The logo -->
+      <div class="hero-logo-wrap" id="heroLogoWrap">
+        <div class="hero-logo-glow" aria-hidden="true"></div>
+        <img src="hero-logo.png" alt="Al-Hasna Group" class="hero-logo-img" id="heroLogoImg" />
+        <div class="hero-logo-shadow" aria-hidden="true"></div>
+      </div>
+
+      <!-- Tagline below logo -->
+      <div class="hero-tagline" id="heroTagline">
+        <span class="ht-line"></span>
+        <span class="ht-text">Est. 1998 · Baghdad, Iraq</span>
+        <span class="ht-line"></span>
+      </div>
+
+    </div>
+
+    <!-- Headline text — bottom left -->
+    <div class="hero-text" id="heroText">
+      <h1 class="hero-headline">
+        <span class="hh-row" id="hhr1">A Legacy of</span>
+        <span class="hh-row hh-row--gold" id="hhr2">Excellence</span>
+      </h1>
+      <p class="hero-sub" id="heroSub">Four premier brands. One unwavering standard.</p>
+      <div class="hero-ctas" id="heroCtas">
+        <a href="#about" class="hcta-primary">
+          <span>Discover</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#contact" class="hcta-ghost">Contact Us</a>
+      </div>
+    </div>
+
+    <!-- Stats — bottom right -->
+    <div class="hero-stats" id="heroStats">
+      <div class="hst-item">
+        <span class="hst-num"><span class="hst-count" data-target="20">0</span><sup>+</sup></span>
+        <span class="hst-label">Years</span>
+        <span class="hst-bar"></span>
+      </div>
+      <div class="hst-sep"></div>
+      <div class="hst-item">
+        <span class="hst-num"><span class="hst-count" data-target="4">0</span></span>
+        <span class="hst-label">Brands</span>
+        <span class="hst-bar"></span>
+      </div>
+      <div class="hst-sep"></div>
+      <div class="hst-item">
+        <span class="hst-num"><span class="hst-count" data-target="500">0</span><sup>+</sup></span>
+        <span class="hst-label">Team</span>
+        <span class="hst-bar"></span>
+      </div>
+      <div class="hst-sep"></div>
+      <div class="hst-item">
+        <span class="hst-num"><span class="hst-count" data-target="12">0</span></span>
+        <span class="hst-label">Locations</span>
+        <span class="hst-bar"></span>
+      </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="hero-scroll" aria-hidden="true">
+      <span class="hscr-bar"></span>
+      <span class="hscr-label">Scroll</span>
+    </div>
+
+    <!-- Marquee tape -->
+    <div class="intro-tape">EXCELLENCE · INTEGRITY · INNOVATION · LUXURY · QUALITY · TRUST · HERITAGE ·&nbsp;</div>
+
+  </div>
+
+  <!-- ════════════════════════════ ABOUT US ════════════════════════════════ -->
+  <div id="about" class="section section--grey">
+    <div class="split-layout">
+
+      <!-- LEFT: title block -->
+      <div class="split-left">
+
+        <div class="about-eyebrow ab-anim" data-ab-delay="0">Who We Are</div>
+
+        <h2 class="section-title ab-anim" data-ab-delay="100">
+          About<br /><em>Al-Hasna Group</em>
+        </h2>
+
+        <!-- Animated gold accent line under title -->
+        <div class="about-gold-line ab-anim" data-ab-delay="220">
+          <span class="agl-track"></span>
+          <span class="agl-fill"></span>
+        </div>
+
+        <!-- Side stat -->
+        <div class="about-side-stat ab-anim" data-ab-delay="340">
+          <span class="ass-num" data-target="26">0</span>
+          <span class="ass-label">Years Shaping Iraq's Finest Brands</span>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: text + pillars -->
+      <div class="split-right">
+
+        <p class="body-text ab-anim" data-ab-delay="80">
+          Founded on principles of quality and vision, Al-Hasna Group has grown into one of Iraq's most respected corporate conglomerates. From our roots in Baghdad, we have built an ecosystem of brands that serve hundreds of thousands of customers each year.
+        </p>
+        <p class="body-text ab-anim" data-ab-delay="160">
+          Our approach is rooted in a deep understanding of what modern consumers deserve — premium products, transparent service, and spaces that inspire. Every decision we make is anchored in our unwavering commitment to elevating the standard of living.
+        </p>
+        <p class="body-text ab-anim" data-ab-delay="240">
+          We operate across retail, interior design, outdoor living, and fashion verticals, guided by a unified culture of excellence and a passion for creating meaningful experiences.
+        </p>
+
+        <div class="about-pillars">
+
+          <div class="pillar ab-anim" data-ab-delay="340">
+            <div class="pillar-icon-wrap">
+              <span class="pillar-icon">◈</span>
+              <span class="pillar-icon-glow"></span>
+            </div>
+            <div class="pillar-body">
+              <div class="pillar-text">Customer First</div>
+              <div class="pillar-sub">Every decision begins and ends with the customer.</div>
+            </div>
+            <span class="pillar-arrow">→</span>
+          </div>
+
+          <div class="pillar ab-anim" data-ab-delay="420">
+            <div class="pillar-icon-wrap">
+              <span class="pillar-icon">◈</span>
+              <span class="pillar-icon-glow"></span>
+            </div>
+            <div class="pillar-body">
+              <div class="pillar-text">Uncompromising Quality</div>
+              <div class="pillar-sub">Excellence is our minimum standard, not our ceiling.</div>
+            </div>
+            <span class="pillar-arrow">→</span>
+          </div>
+
+          <div class="pillar ab-anim" data-ab-delay="500">
+            <div class="pillar-icon-wrap">
+              <span class="pillar-icon">◈</span>
+              <span class="pillar-icon-glow"></span>
+            </div>
+            <div class="pillar-body">
+              <div class="pillar-text">Ethical Leadership</div>
+              <div class="pillar-sub">Integrity shapes every relationship we build.</div>
+            </div>
+            <span class="pillar-arrow">→</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ OUR VISION ══════════════════════════════ -->
+  <div id="vision" class="section section--dark">
+    <div class="vision-inner">
+      <div class="vision-eyebrow reveal">Our Vision</div>
+      <div class="vision-gold-rule reveal"></div>
+      <blockquote class="vision-statement reveal">
+        "To be the most trusted and admired group of companies in the region — setting the standard for quality, integrity, and transformative experiences that enrich every life we touch."
+      </blockquote>
+      <div class="vision-divider reveal"></div>
+      <p class="vision-sub reveal">
+        Our mission is to build enduring brands that stand for more than commerce — they stand for aspiration, craftsmanship, and the relentless pursuit of better.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ OUR BRANDS ═══════════════════════════════ -->
+  <div id="brands" class="section brands-section">
+
+    <!-- Section header -->
+    <div class="brands-header reveal">
+      <div class="section-eyebrow">Portfolio</div>
+      <h2 class="section-title">Our <em>Brands</em></h2>
+      <p class="section-sub">Four distinct brands, one unified vision of excellence.</p>
+    </div>
+
+    <!-- Cards grid -->
+    <div class="brands-grid">
+
+      <div class="brand-card" data-brand-delay="0">
+        <div class="bc-number">01</div>
+        <div class="bc-logo-wrap">
+          <img src="homecenter.png" alt="Home Center" class="bc-logo" />
+        </div>
+        <div class="bc-content">
+          <div class="bc-meta">
+            <span class="bc-tag">Home & Living</span>
+          </div>
+          <div class="bc-name">Home Center</div>
+          <div class="bc-desc">Premium home furnishings and lifestyle solutions for the modern Iraqi family.</div>
+          <div class="bc-footer">
+            <span class="bc-rule"></span>
+            <span class="bc-cta">
+              <span class="bc-cta-text">Explore Brand</span>
+              <svg class="bc-cta-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <div class="bc-glow" aria-hidden="true"></div>
+      </div>
+
+      <div class="brand-card" data-brand-delay="100">
+        <div class="bc-number">02</div>
+        <div class="bc-logo-wrap">
+          <img src="inhouse.png" alt="In House" class="bc-logo" />
+        </div>
+        <div class="bc-content">
+          <div class="bc-meta">
+            <span class="bc-tag">Interior Design</span>
+          </div>
+          <div class="bc-name">In House</div>
+          <div class="bc-desc">Curated interior design concepts that transform living spaces into sanctuaries.</div>
+          <div class="bc-footer">
+            <span class="bc-rule"></span>
+            <span class="bc-cta">
+              <span class="bc-cta-text">Explore Brand</span>
+              <svg class="bc-cta-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <div class="bc-glow" aria-hidden="true"></div>
+      </div>
+
+      <div class="brand-card" data-brand-delay="200">
+        <div class="bc-number">03</div>
+        <div class="bc-logo-wrap">
+          <img src="veranda.png" alt="Veranda" class="bc-logo" />
+        </div>
+        <div class="bc-content">
+          <div class="bc-meta">
+            <span class="bc-tag">Outdoor Living</span>
+          </div>
+          <div class="bc-name">Veranda</div>
+          <div class="bc-desc">Outdoor and garden living collections that bring elegance to open-air spaces.</div>
+          <div class="bc-footer">
+            <span class="bc-rule"></span>
+            <span class="bc-cta">
+              <span class="bc-cta-text">Explore Brand</span>
+              <svg class="bc-cta-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <div class="bc-glow" aria-hidden="true"></div>
+      </div>
+
+      <div class="brand-card" data-brand-delay="300">
+        <div class="bc-number">04</div>
+        <div class="bc-logo-wrap">
+          <img src="clidor.png" alt="Clidor" class="bc-logo" />
+        </div>
+        <div class="bc-content">
+          <div class="bc-meta">
+            <span class="bc-tag">Fashion</span>
+          </div>
+          <div class="bc-name">Clidor</div>
+          <div class="bc-desc">Sophisticated fashion and accessories that define contemporary style.</div>
+          <div class="bc-footer">
+            <span class="bc-rule"></span>
+            <span class="bc-cta">
+              <span class="bc-cta-text">Explore Brand</span>
+              <svg class="bc-cta-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <div class="bc-glow" aria-hidden="true"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ SERVICES ═════════════════════════════════ -->
+  <div id="services" class="section section--grey">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">What We Offer</div>
+      <h2 class="section-title">Our <em>Services</em></h2>
+      <p class="section-sub">Comprehensive solutions crafted with precision and care.</p>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card reveal">
+        <div class="service-icon">⬡</div>
+        <div class="service-title">Retail Excellence</div>
+        <div class="service-desc">World-class in-store and digital retail experiences that set benchmarks across the industry. From product curation to customer journey design, we redefine what shopping means.</div>
+      </div>
+
+      <div class="service-card reveal">
+        <div class="service-icon">◻</div>
+        <div class="service-title">Interior Design</div>
+        <div class="service-desc">Expert interior architecture and design consultancy for residential and commercial spaces. Our designers craft environments that balance beauty, function, and personal expression.</div>
+      </div>
+
+      <div class="service-card reveal">
+        <div class="service-icon">◯</div>
+        <div class="service-title">Supply Chain Management</div>
+        <div class="service-desc">End-to-end logistics and procurement operations ensuring product excellence from source to shelf. Reliable, transparent, and built for scale across all our brand portfolios.</div>
+      </div>
+
+      <div class="service-card reveal">
+        <div class="service-icon">△</div>
+        <div class="service-title">Brand Development</div>
+        <div class="service-desc">Strategic brand building and market positioning for long-term equity creation. We cultivate brands that resonate emotionally and stand the test of time.</div>
+      </div>
+
+      <div class="service-card reveal">
+        <div class="service-icon">✦</div>
+        <div class="service-title">Corporate Consulting</div>
+        <div class="service-desc">Strategic advisory services for businesses seeking operational transformation and sustainable growth. Leveraging two decades of on-the-ground regional expertise.</div>
+      </div>
+
+      <div class="service-card reveal">
+        <div class="service-icon">◇</div>
+        <div class="service-title">Customer Experience</div>
+        <div class="service-desc">Omnichannel experience design that builds lasting loyalty and advocacy. From digital touchpoints to flagship store environments, every moment is intentional.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ OUR TEAM ════════════════════════════════ -->
+  <!-- ════════════════════════════ OUR TEAM ═══════════════════════════════ -->
+  <div id="team" class="section section--team">
+
+    <!-- Header -->
+    <div class="team-header reveal">
+      <div class="section-eyebrow">Our Leadership</div>
+      <h2 class="section-title">Meet the Leaders Behind <em>Al-Hasna</em></h2>
+      <p class="section-sub">A team of seasoned professionals united by a shared vision of excellence, integrity, and transformative leadership.</p>
+    </div>
+
+    <!-- ── Founder featured card ── -->
+    <div class="founder-card reveal" id="founderCard">
+      <div class="fc-photo-col">
+        <div class="fc-photo">
+          <div class="fc-initials">MF</div>
+        </div>
+        <div class="fc-photo-corner fc-tl" aria-hidden="true"></div>
+        <div class="fc-photo-corner fc-br" aria-hidden="true"></div>
+      </div>
+      <div class="fc-content">
+        <div class="fc-eyebrow">
+          <span class="fc-line"></span>
+          <span>Founder · Est. 1998</span>
+        </div>
+        <h3 class="fc-name">Mr. Fawzi</h3>
+        <div class="fc-gold-rule"></div>
+        <p class="fc-bio">Visionary entrepreneur who built Al-Hasna Group from the ground up — driven by an unwavering belief in Iraqi enterprise and a relentless pursuit of excellence that has shaped the region's business landscape for over two decades.</p>
+        <div class="fc-meta">
+          <div class="fc-meta-item">
+            <span class="fc-meta-num">26</span>
+            <span class="fc-meta-label">Years Leading</span>
+          </div>
+          <div class="fc-meta-sep"></div>
+          <div class="fc-meta-item">
+            <span class="fc-meta-num">4</span>
+            <span class="fc-meta-label">Brands Founded</span>
+          </div>
+          <div class="fc-meta-sep"></div>
+          <div class="fc-meta-item">
+            <span class="fc-meta-num">500,000</span>
+            <span class="fc-meta-label">People Employed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Leadership slider ── -->
+    <div class="ldr-slider-wrap" id="ldrSliderWrap">
+
+      <!-- Prev -->
+      <button class="ldr-btn ldr-btn--prev" id="ldrPrev" aria-label="Previous">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M13 4L7 10L13 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Next -->
+      <button class="ldr-btn ldr-btn--next" id="ldrNext" aria-label="Next">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M7 4L13 10L7 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Track -->
+      <div class="ldr-track" id="ldrTrack">
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">AF</div></div>
+          <div class="ls-body">
+            <div class="ls-name">AL-Hussain Fawzi</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">Chief Executive Officer</div>
+          </div>
+        </div>
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">AH</div></div>
+          <div class="ls-body">
+            <div class="ls-name">Ahmed Haider</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">Managing Director</div>
+          </div>
+        </div>
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">HN</div></div>
+          <div class="ls-body">
+            <div class="ls-name">Hameed Nazar</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">Warehouse Manager</div>
+          </div>
+        </div>
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">AS</div></div>
+          <div class="ls-body">
+            <div class="ls-name">Ahmad Sufian</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">IT Manager</div>
+          </div>
+        </div>
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">ME</div></div>
+          <div class="ls-body">
+            <div class="ls-name">Mohammed Emad</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">Accounting Manager</div>
+          </div>
+        </div>
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">AR</div></div>
+          <div class="ls-body">
+            <div class="ls-name">Ali Raji</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">Finance Manager</div>
+          </div>
+        </div>
+
+        <div class="ldr-slide reveal">
+          <div class="ls-photo"><div class="ls-initials">MM</div></div>
+          <div class="ls-body">
+            <div class="ls-name">Mustafa Maroof</div>
+            <div class="ls-gold-line"><span class="lsgl-fill"></span></div>
+            <div class="ls-role">HR Manager</div>
+          </div>
+        </div>
+
+      </div><!-- /ldr-track -->
+    </div><!-- /ldr-slider-wrap -->
+
+  </div>
+
+  <!-- ════════════════════════════ CONTACT ═════════════════════════════════ -->
+  <div id="contact" class="section section--dark">
+    <div class="contact-inner">
+      <div class="contact-left reveal">
+        <div class="section-eyebrow section-eyebrow--light">Get In Touch</div>
+        <h2 class="section-title section-title--light">Let's <em>Connect</em></h2>
+        <p class="contact-text">We would love to hear from you. Whether you have a business inquiry, partnership proposal, or simply want to learn more about the Al-Hasna Group family of brands.</p>
+        <div class="contact-details">
+          <div class="contact-item">
+            <div class="contact-icon">✉</div>
+            <div class="contact-val"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ef86818980af8e83878e9c818ec2889d809a9fc18c8082">[email&#160;protected]</a></div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">✆</div>
+            <div class="contact-val">+964 770 000 0000</div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">◎</div>
+            <div class="contact-val">Al-Mansour District, Baghdad, Iraq</div>
+          </div>
+        </div>
+      </div>
+      <div class="contact-right reveal">
+        <div class="contact-form-wrap">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="cName" class="form-input" placeholder="Your full name" />
+            <span class="form-error" id="errName"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="cEmail" class="form-input" placeholder="your@email.com" />
+            <span class="form-error" id="errEmail"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea id="cMsg" class="form-input form-textarea" placeholder="How can we help you?"></textarea>
+            <span class="form-error" id="errMsg"></span>
+          </div>
+          <div class="form-btn-wrap">
+            <div class="form-btn" id="submitBtn" onclick="submitForm()">
+              <span id="btnText">Send Message</span>
+              <span class="btn-arrow">→</span>
+            </div>
+          </div>
+          <div class="form-success" id="formSuccess">Thank you. We will be in touch shortly.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ FOOTER ══════════════════════════════════ -->
+  <div id="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <img src="alhasna-logo.png" alt="Al-Hasna Group" />
+      </div>
+      <div class="footer-copy">
+        © 2026 Al-Hasna Group. All rights reserved.
+      </div>
+      <div class="footer-links">
+        <a href="#about">About</a>
+        <a href="#brands">Brands</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </div>
+  <!-- Back to Top -->
+  <div id="backTop" onclick="goToTop()">↑</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
