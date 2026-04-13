@@ -2,6 +2,12 @@
    AL-HASNA GROUP  —  script.js
 ═══════════════════════════════════ */
 
+/* ─────────────────────────────────────────────────────
+   CONFIGURATION — mail.php endpoint (same server)
+───────────────────────────────────────────────────── */
+var FORM_ENDPOINT = '/mail.php';
+/* ───────────────────────────────────────────────────── */
+
 document.addEventListener('DOMContentLoaded', function () {
 
   /* ── Navbar scroll ── */
@@ -17,8 +23,10 @@ document.addEventListener('DOMContentLoaded', function () {
     a.addEventListener('click', function (e) {
       var h = this.getAttribute('href');
       if (h === '#') return;
+      /* Whitelist: only allow simple #id patterns — block CSS selector injection */
+      if (!/^#[A-Za-z][\w\-]*$/.test(h)) return;
       e.preventDefault();
-      var t = document.querySelector(h);
+      var t = document.getElementById(h.slice(1));
       if (t) window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 110, behavior: 'smooth' });
       var nm = document.getElementById('navMenu');
       if (nm) nm.classList.remove('open');
@@ -26,10 +34,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /* ── Mobile menu ── */
-  window.toggleMenu = function () {
+  var hamburgerBtn = document.getElementById('hamburger');
+  function toggleMenu() {
     document.getElementById('navMenu').classList.toggle('open');
-    document.getElementById('hamburger').classList.toggle('active');
-  };
+    hamburgerBtn.classList.toggle('active');
+  }
+  if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleMenu);
   document.addEventListener('click', function (e) {
     var nm = document.getElementById('navMenu'), hb = document.getElementById('hamburger');
     if (nm && nm.classList.contains('open') && !nm.contains(e.target) && !hb.contains(e.target)) {
@@ -41,7 +51,9 @@ document.addEventListener('DOMContentLoaded', function () {
   document.head.appendChild(hs);
 
   /* ── Back to top ── */
-  window.goToTop = function () { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  function goToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  var backTopBtn = document.getElementById('backTop');
+  if (backTopBtn) backTopBtn.addEventListener('click', goToTop);
 
   /* Back-to-top: show after 400px scroll, fade in/out */
   var backBtn = document.getElementById('backTop');
@@ -107,18 +119,84 @@ document.addEventListener('DOMContentLoaded', function () {
     if (id==='cMsg' && v.length<10) { f.classList.add('error'); e.textContent='Message too short.'; return false; }
     return true;
   }
-  window.submitForm = function () {
-    if (!vf('cName','errName','Name') | !vf('cEmail','errEmail','Email') | !vf('cMsg','errMsg','Message')) return;
-    var btn=document.getElementById('submitBtn'), bt=document.getElementById('btnText'), sc=document.getElementById('formSuccess');
-    if (bt) bt.textContent='Sending…';
-    if (btn){btn.style.pointerEvents='none';btn.style.opacity='0.6';}
-    setTimeout(function(){
-      ['cName','cEmail','cMsg'].forEach(function(id){var f=document.getElementById(id);if(f)f.value='';});
-      if(bt)bt.textContent='Send Message';
-      if(btn){btn.style.pointerEvents='';btn.style.opacity='';}
-      if(sc){sc.style.display='block';setTimeout(function(){sc.style.display='none';},5000);}
-    },1400);
-  };
+  /* ── Secure form submission ── */
+  var submitBtn = document.getElementById('submitBtn');
+  var _lastSubmit = 0;       /* timestamp of last successful send */
+  var _submitting = false;   /* in-flight guard */
+  if (submitBtn) submitBtn.addEventListener('click', submitForm);
+
+  function submitForm() {
+    /* Honeypot check — abort silently if bot filled it */
+    var honey = document.getElementById('_honey');
+    if (honey && honey.value) return;
+
+    /* Double-submit guard */
+    if (_submitting) return;
+
+    /* Client-side rate limit: 60 seconds between submissions */
+    var now = Date.now();
+    var er  = document.getElementById('formError');
+    if (_lastSubmit && (now - _lastSubmit) < 60000) {
+      if (er) { er.textContent = 'Please wait before sending another message.'; er.style.display = 'block'; }
+      return;
+    }
+
+    /* Validate all fields — run ALL first so errors show simultaneously */
+    var validName  = vf('cName',  'errName',  'Name');
+    var validEmail = vf('cEmail', 'errEmail', 'Email');
+    var validMsg   = vf('cMsg',   'errMsg',   'Message');
+    if (!validName || !validEmail || !validMsg) return;
+
+    var btn = document.getElementById('submitBtn');
+    var bt  = document.getElementById('btnText');
+    var sc  = document.getElementById('formSuccess');
+    var er  = document.getElementById('formError');
+
+    /* Disable button while sending */
+    _submitting = true;
+    if (bt)  bt.textContent = 'Sending…';
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+    if (er)  { er.textContent = ''; er.style.display = 'none'; }
+
+    /* Collect raw values (validation already passed above) */
+    var rawName    = document.getElementById('cName').value.trim();
+    var rawEmail   = document.getElementById('cEmail').value.trim();
+    var rawMessage = document.getElementById('cMsg').value.trim();
+
+    /* Build FormData for mail.php */
+    var formData = new FormData();
+    formData.append('name',    rawName);
+    formData.append('email',   rawEmail);
+    formData.append('message', rawMessage);
+
+    fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.success === true) {
+        _lastSubmit = Date.now();
+        ['cName','cEmail','cMsg'].forEach(function(id) {
+          var f = document.getElementById(id); if (f) f.value = '';
+        });
+        if (sc) { sc.style.display = 'block'; setTimeout(function() { sc.style.display = 'none'; }, 6000); }
+      } else {
+        throw new Error(data.error || 'Submission failed');
+      }
+    })
+    .catch(function() {
+      if (er) {
+        er.textContent = 'Something went wrong. Please try again or email us directly.';
+        er.style.display = 'block';
+      }
+    })
+    .finally(function() {
+      _submitting = false;
+      if (bt)  bt.textContent = 'Send Message';
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    });
+  }
   ['cName','cEmail','cMsg'].forEach(function(id){
     var f=document.getElementById(id); if(!f) return;
     var em={cName:'errName',cEmail:'errEmail',cMsg:'errMsg'}, lm={cName:'Name',cEmail:'Email',cMsg:'Message'};
@@ -128,141 +206,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-  /* ════════════════════════════════════════
-     TEAM — FOUNDER + LEADERSHIP SLIDER
-  ════════════════════════════════════════ */
-  (function () {
-    var track   = document.getElementById('ldrTrack');
-    var btnNext = document.getElementById('ldrNext');
-    var btnPrev = document.getElementById('ldrPrev');
-    if (!track) return;
-
-    /* Dynamic scroll step = first card width + gap */
-    function getStep() {
-      var first = track.querySelector('.ldr-slide');
-      if (!first) return 240;
-      return first.offsetWidth + 20;
-    }
-
-    function updateBtns() {
-      if (!btnPrev || !btnNext) return;
-      var sl  = track.scrollLeft;
-      var max = track.scrollWidth - track.clientWidth;
-      btnPrev.classList.toggle('is-off', sl <= 2);
-      btnNext.classList.toggle('is-off', sl >= max - 2);
-    }
-
-    if (btnNext) btnNext.addEventListener('click', function () {
-      track.scrollBy({ left: getStep(), behavior: 'smooth' });
-    });
-    if (btnPrev) btnPrev.addEventListener('click', function () {
-      track.scrollBy({ left: -getStep(), behavior: 'smooth' });
-    });
-
-    track.addEventListener('scroll', updateBtns, { passive: true });
-    updateBtns();
-
-    /* Mouse drag */
-    var dragging = false, startX = 0, startScroll = 0;
-    track.addEventListener('mousedown', function (e) {
-      dragging = true;
-      startX = e.pageX;
-      startScroll = track.scrollLeft;
-      track.classList.add('is-dragging');
-    });
-    window.addEventListener('mousemove', function (e) {
-      if (!dragging) return;
-      track.scrollLeft = startScroll - (e.pageX - startX);
-    });
-    window.addEventListener('mouseup', function () {
-      if (!dragging) return;
-      dragging = false;
-      track.classList.remove('is-dragging');
-    });
-
-    /* Auto-scroll every 2s — pauses on hover or drag */
-    var autoTimer = null;
-    var userActive = false;
-
-    function autoNext() {
-      if (userActive) return;
-      var sl  = track.scrollLeft;
-      var max = track.scrollWidth - track.clientWidth;
-      if (sl >= max - 2) {
-        /* reached end — loop back to start */
-        track.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        track.scrollBy({ left: getStep(), behavior: 'smooth' });
-      }
-    }
-
-    function startAuto() {
-      if (autoTimer) return;
-      autoTimer = setInterval(autoNext, 2000);
-    }
-
-    function pauseAuto() {
-      userActive = true;
-      clearInterval(autoTimer);
-      autoTimer = null;
-      /* resume after 4s of inactivity */
-      clearTimeout(window._ldrResume);
-      window._ldrResume = setTimeout(function () {
-        userActive = false;
-        startAuto();
-      }, 4000);
-    }
-
-    /* Pause on hover */
-    var wrap = document.getElementById('ldrSliderWrap');
-    if (wrap) {
-      wrap.addEventListener('mouseenter', pauseAuto);
-      wrap.addEventListener('mouseleave', function () {
-        userActive = false;
-        startAuto();
-      });
-    }
-
-    /* Pause on manual button click */
-    if (btnNext) btnNext.addEventListener('click', pauseAuto);
-    if (btnPrev) btnPrev.addEventListener('click', pauseAuto);
-
-    /* Pause on drag */
-    track.addEventListener('mousedown', pauseAuto);
-    track.addEventListener('touchstart', pauseAuto, { passive: true });
-
-    /* Start auto after section reveal */
-    setTimeout(startAuto, 1200);
-
-    /* Touch drag */
-    var touchStartX = 0, touchScrollStart = 0;
-    track.addEventListener('touchstart', function (e) {
-      touchStartX = e.touches[0].clientX;
-      touchScrollStart = track.scrollLeft;
-    }, { passive: true });
-    track.addEventListener('touchmove', function (e) {
-      track.scrollLeft = touchScrollStart - (e.touches[0].clientX - touchStartX);
-    }, { passive: true });
-
-    /* Scroll reveal for slides */
-    var slides = Array.prototype.slice.call(track.querySelectorAll('.ldr-slide'));
-    var teamRevealed = false;
-    function revealTeam() {
-      if (teamRevealed) return;
-      var section = document.getElementById('team');
-      if (!section) return;
-      if (section.getBoundingClientRect().top > window.innerHeight * 0.92) return;
-      teamRevealed = true;
-      slides.forEach(function (sl, i) {
-        setTimeout(function () { sl.classList.add('in-view'); }, i * 80 + 200);
-      });
-    }
-    revealTeam();
-    window.addEventListener('scroll', revealTeam, { passive: true });
-    setTimeout(function () {
-      if (!teamRevealed) { teamRevealed = true; slides.forEach(function (s) { s.classList.add('in-view'); }); }
-    }, 3000);
-  })();
 
 }); /* end DOMContentLoaded */
 
@@ -467,6 +410,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (triggered) return;
     triggered = true;
 
+    /* Trigger vertical line */
+    var vline = section.querySelector('.about-left-vline');
+    if (vline) setTimeout(function () { vline.classList.add('ab-visible-line'); }, 100);
+
     items.forEach(function (el) {
       var delay = parseInt(el.getAttribute('data-ab-delay') || 0);
       setTimeout(function () {
@@ -533,3 +480,330 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }, 3000);
 })();
+
+/* ═══════════════════════════════════════════════════════
+   VISION — COMPACT SCROLL REVEAL
+═══════════════════════════════════════════════════════ */
+(function () {
+  var section = document.getElementById('vision');
+  if (!section) return;
+
+  var left  = section.querySelector('.vn-left');
+  var right = section.querySelector('.vn-right');
+  var triggered = false;
+
+  /* Left is always visible — add class immediately for dash/rule animations */
+  if (left) left.classList.add('vn-visible');
+
+  function trigger() {
+    if (triggered) return;
+    var rect = section.getBoundingClientRect();
+    if (rect.top > window.innerHeight * 0.9) return;
+    triggered = true;
+    if (right) right.classList.add('vn-visible');
+  }
+
+  trigger();
+  window.addEventListener('scroll', trigger, { passive: true });
+  setTimeout(function () {
+    if (!triggered) {
+      triggered = true;
+      if (right) right.classList.add('vn-visible');
+    }
+  }, 3000);
+})();
+
+
+/* ═══════════════════════════════════════════════════════
+   BRAND DETAIL OVERLAY
+═══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function () {
+
+  var BRANDS = {
+
+    homecenter: {
+      num: '01', cat: 'Home & Living',
+      name: 'Home Center',
+      tagline: 'Premium Home Furnishings · Baghdad',
+      logo: 'homecenter.png',
+      coverBg: 'linear-gradient(135deg, #ede8df 0%, #e6ddd0 60%, #dfd5c4 100%)',
+      statement: 'The home is not a backdrop for life — it is life itself. Every piece we carry has been chosen to honour that belief with the same rigour we bring to every other decision.',
+      story: 'Home Center was founded on a simple but enduring conviction: that quality in the home is not a luxury, it is a standard. Since its founding in Baghdad, the brand has grown into Iraq\'s most trusted destination for premium home furnishings — a place where every collection is curated with the understanding that the spaces we inhabit shape who we become.\n\nWe do not follow seasonal trends. We curate with permanence in mind. From living rooms to dining tables, from bedroom sanctuaries to the spaces in between, every Home Center piece is chosen to be lived with, improved with time, and passed forward.',
+      tags: ['Premium Furnishings', 'Family Living', 'Considered Comfort'],
+      pillars: [
+        { title: 'Curated Excellence', text: 'Every product passes through a rigorous selection process that considers quality, proportion, durability, and the way it will age over years of daily living.' },
+        { title: 'Lifestyle Thinking', text: 'We think beyond individual pieces — in complete rooms, in morning light, in family gatherings. Every item must earn its place within a whole.' },
+        { title: 'Enduring Craft', text: 'We partner exclusively with makers who believe that materials should improve with age — who understand the difference between what looks good and what lasts.' },
+        { title: 'Personal Guidance', text: 'Our team works with each client to translate ambition into environment — a fully realised living space that feels genuinely, personally right.' }
+      ],
+      stripeVals: [
+        { n: 'Est.', word: '1998' },
+        { n: 'Based', word: 'Baghdad' },
+        { n: 'Standard', word: 'Premium' },
+        { n: 'Focus', word: 'The Home' }
+      ],
+      followName: 'Home Center',
+      followHandle: '@alhasanihomecenter',
+      igUrl: 'https://www.instagram.com/alhasanihomecenter'
+    },
+
+    inhouse: {
+      num: '02', cat: 'Interior Design',
+      name: 'In House',
+      tagline: 'Space. Structure. Silence.',
+      logo: 'inhouse.png',
+      coverBg: '#1a1a1a',
+      statement: 'Interior design is not decoration — it is architecture. The discipline of space, applied with rigour, restraint, and an understanding that what is left out defines what remains.',
+      story: 'In House was founded on a single proposition: that the interior of a space should be as considered as its structure. Not adorned — designed. With a precise understanding of volume, proportion, light, and the exact relationship between objects and the voids that surround them.\n\nEvery In House commission begins with analysis, not aesthetics. We read the space architecturally — its load-bearing logic, its orientation to light, its natural circulation patterns. Only then do we begin. The result is always an interior that feels structurally inevitable: as though the room could not have been resolved any other way.',
+      tags: ['Architecture', 'Spatial Design', 'Material Logic'],
+      pillars: [
+        { title: 'Spatial Analysis', text: 'Every project opens with a forensic reading of the space. Structure, volume, and movement are mapped before a single material decision is made.' },
+        { title: 'Material Logic', text: 'Stone. Concrete. Raw timber. Brushed steel. We select materials for their structural honesty — how they read under light, how they age, and what they communicate.' },
+        { title: 'Light Engineering', text: 'Light is not an accessory. We design natural and artificial light with the same rigour we apply to structure — it defines the spatial experience entirely.' },
+        { title: 'Enduring Resolution', text: 'Our ambition is not currency — it is permanence. Spaces designed to be as precisely correct in thirty years as they are on the day of completion.' }
+      ],
+      stripeVals: [
+        { n: 'Discipline', word: 'Architecture' },
+        { n: 'Method', word: 'Analytical' },
+        { n: 'Material', word: 'Structural' },
+        { n: 'Duration', word: 'Permanent' }
+      ],
+      followName: 'In House',
+      followHandle: '@inhouseiraq',
+      igUrl: 'https://www.instagram.com/inhouseiraq'
+    },
+
+    veranda: {
+      num: '03', cat: 'Outdoor Living',
+      name: 'Veranda',
+      tagline: 'Outdoor Collections · Garden & Terrace',
+      logo: 'veranda.png',
+      coverBg: 'linear-gradient(135deg, #e5eae0 0%, #dde5d6 60%, #d4deca 100%)',
+      statement: 'The space beyond the walls deserves the same quality of thought as any room. Outdoor living, composed with intention, is its own form of quiet, enduring luxury.',
+      story: 'Veranda was created for those who understand that the boundary between inside and outside is a design choice, not a given. The brand draws on the great tradition of the garden as sanctuary — a place of calm, considered beauty where the quality of thought is equal to anything found indoors.\n\nEvery Veranda piece is engineered for the open air while carrying the same refinement and intention as any premium interior collection. We believe that terraces, courtyards, and gardens deserve the same level of design intelligence as living rooms — and that the finest outdoor spaces are not furnished, they are composed.',
+      tags: ['Outdoor Furniture', 'Garden Sanctuary', 'Natural Materials'],
+      pillars: [
+        { title: 'Seasonal Integrity', text: 'Every Veranda piece is engineered to hold its character and quality through every season — without ever compromising on form or refinement.' },
+        { title: 'Honest Materials', text: 'We work with teak, rattan, brushed aluminium, and stone — materials that age beautifully and belong naturally in the open environment.' },
+        { title: 'Dining as Ceremony', text: 'From intimate tables to generous arrangements for twelve — we believe outdoor dining should feel as considered as any formal interior occasion.' },
+        { title: 'Sanctuary Thinking', text: 'We help create outdoor environments that genuinely restore — private, beautifully composed spaces that feel like a true retreat from the world.' }
+      ],
+      stripeVals: [
+        { n: 'Setting', word: 'Outdoors' },
+        { n: 'Spirit', word: 'Natural' },
+        { n: 'Quality', word: 'Enduring' },
+        { n: 'Purpose', word: 'Sanctuary' }
+      ],
+      followName: 'Veranda',
+      followHandle: '@veranda.iq',
+      igUrl: 'https://www.instagram.com/veranda.iq'
+    },
+
+    clidor: {
+      num: '04', cat: 'Fashion',
+      name: 'Clidor',
+      tagline: 'Contemporary Fashion · Refined Accessories',
+      logo: 'clidor.png',
+      coverBg: 'linear-gradient(135deg, #eae5dd 0%, #e2dbd1 60%, #d9d1c5 100%)',
+      statement: 'Clothing is not performance — it is precision. A quiet, certain expression of discernment. Clidor exists for those who understand the difference between dressing and being dressed.',
+      story: 'Clidor stands at the intersection of contemporary fashion and enduring style, built on the belief that the finest garments are those that feel more right with each wearing. Not because they follow trends, but because they were made correctly from the beginning — with the right fabric, the right weight, the right proportion.\n\nEvery Clidor piece begins with a single question: will this still feel exactly right in ten years? That question drives every decision — from the sourcing of materials to the geometry of a silhouette, from the precision of a seam to the considered weight of a closure. We dress those who do not need to announce themselves. Who understand that the finest things speak softly — but are always noticed.',
+      tags: ['Contemporary Fashion', 'Premium Accessories', 'Refined Tailoring'],
+      pillars: [
+        { title: 'Fabric Intelligence', text: 'We source exclusively from mills where natural fibres, precise weights, and honest finishing are treated as non-negotiable standards.' },
+        { title: 'Considered Proportion', text: 'Every silhouette is developed to flatter and move well — to feel as precise at the close of a long day as it did at the beginning.' },
+        { title: 'Refined Accessories', text: 'Our accessories are designed with the same rigour as our ready-to-wear: minimal, precisely made, and built to become the ones you always reach for.' },
+        { title: 'Wardrobe Logic', text: 'We design pieces that work within a coherent language — a complete wardrobe sensibility rather than isolated items competing for attention.' }
+      ],
+      stripeVals: [
+        { n: 'Category', word: 'Fashion' },
+        { n: 'Standard', word: 'Premium' },
+        { n: 'Tone', word: 'Restrained' },
+        { n: 'Duration', word: 'Lasting' }
+      ],
+      followName: 'Clidor',
+      followHandle: '@clidor.iq',
+      igUrl: 'https://www.instagram.com/clidor.iq'
+    }
+  };
+
+  /* ── Security: sanitize user input ── */
+  function sanitize(str) {
+    return String(str).replace(/[<>"'&]/g, function(c) {
+      return { '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":"&#39;", '&':'&amp;' }[c];
+    });
+  }
+
+  /* ── Security: brand key whitelist ── */
+  var BRAND_WHITELIST = { homecenter: 1, inhouse: 1, veranda: 1, clidor: 1 };
+
+  /* ── DOM ── */
+  var overlay  = document.getElementById('brandOverlay');
+  var veil     = document.getElementById('bovVeil');
+  var closeBtn = document.getElementById('bovClose');
+  var scroll   = document.getElementById('bovScroll');
+  if (!overlay || !scroll) return;
+
+  /* ── Populate ── */
+  function populate(key) {
+    var d = BRANDS[key];
+    if (!d) return;
+
+    function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+    function setStyle(id, p, v) { var el = document.getElementById(id); if (el) el.style[p] = v; }
+
+    /* Nav */
+    setText('bovNavBrand', d.name);
+
+    /* Cover */
+    setStyle('bovCover', 'background', d.coverBg);
+    setText('bovCoverNum',     d.num);
+    setText('bovCoverCat',     d.cat);
+    setText('bovCoverName',    d.name);
+    setText('bovCoverTagline', d.tagline);
+    var cl = document.getElementById('bovCoverLogo');
+    if (cl) { cl.src = d.logo; cl.alt = d.name; }
+
+    /* Statement */
+    setText('bovStatement', d.statement);
+
+    /* Helper: empty a container safely */
+    function clearEl(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+
+    /* Story */
+    var prose = document.getElementById('bovChapterProse');
+    if (prose) {
+      clearEl(prose);
+      d.story.split('\n\n').forEach(function(p) {
+        var el = document.createElement('p');
+        el.textContent = p.trim();
+        prose.appendChild(el);
+      });
+    }
+    var al = document.getElementById('bovAsideLogo');
+    if (al) { al.src = d.logo; al.alt = d.name; }
+    var atags = document.getElementById('bovAsideTags');
+    if (atags) {
+      clearEl(atags);
+      d.tags.forEach(function(t) {
+        var s = document.createElement('span');
+        s.className = 'bov-atag';
+        s.textContent = t;
+        atags.appendChild(s);
+      });
+    }
+
+    /* Pillars — built with safe DOM, no innerHTML */
+    var pl = document.getElementById('bovPillarsList');
+    if (pl) {
+      clearEl(pl);
+      d.pillars.forEach(function(p, i) {
+        var item  = document.createElement('div');
+        item.className = 'bov-pillar-item';
+
+        var num   = document.createElement('div');
+        num.className = 'bov-pillar-item-n';
+        num.textContent = '0' + (i + 1);
+
+        var body  = document.createElement('div');
+        body.className = 'bov-pillar-item-body';
+
+        var title = document.createElement('div');
+        title.className = 'bov-pillar-item-title';
+        title.textContent = p.title;
+
+        var text  = document.createElement('div');
+        text.className = 'bov-pillar-item-text';
+        text.textContent = p.text;
+
+        body.appendChild(title);
+        body.appendChild(text);
+        item.appendChild(num);
+        item.appendChild(body);
+        pl.appendChild(item);
+      });
+    }
+
+    /* Stripe — safe DOM */
+    var stripe = document.getElementById('bovStripe');
+    if (stripe) {
+      clearEl(stripe);
+      d.stripeVals.forEach(function(v) {
+        var val  = document.createElement('div');
+        val.className = 'bov-stripe-val';
+
+        var n    = document.createElement('div');
+        n.className = 'bov-stripe-val-n';
+        n.textContent = v.n;
+
+        var word = document.createElement('div');
+        word.className = 'bov-stripe-val-word';
+        word.textContent = v.word;
+
+        val.appendChild(n);
+        val.appendChild(word);
+        stripe.appendChild(val);
+      });
+    }
+
+    /* Follow CTA */
+    setText('bovFollowName',   d.followName);
+    setText('bovFollowHandle', d.followHandle);
+
+    /* Instagram button — stored URL comes from static BRANDS object, safe */
+    var igBtn = document.getElementById('bovIgBtn');
+    if (igBtn) {
+      /* Remove old listener each time by cloning */
+      var newBtn = igBtn.cloneNode(true);
+      igBtn.parentNode.replaceChild(newBtn, igBtn);
+      newBtn.setAttribute('href', d.igUrl);
+      newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.open(d.igUrl, '_blank', 'noopener,noreferrer');
+      });
+    }
+
+    /* Colophon */
+    setText('bovColophonName', d.name);
+  }
+
+  /* ── Open / Close ── */
+  function openOverlay(key) {
+    /* Strict whitelist — reject any key not in BRANDS */
+    if (!BRAND_WHITELIST[key]) return;
+    populate(key);
+    scroll.scrollTop = 0;
+    /* Set brand theme on drawer */
+    var drawer = document.getElementById('bovDrawer');
+    if (drawer) {
+      drawer.removeAttribute('data-brand');
+      drawer.setAttribute('data-brand', key);
+    }
+    overlay.classList.add('bov--open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOverlay() {
+    overlay.classList.remove('bov--open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  if (closeBtn)  closeBtn.addEventListener('click', closeOverlay);
+  if (veil)      veil.addEventListener('click', closeOverlay);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && overlay.classList.contains('bov--open')) closeOverlay();
+  });
+
+  /* ── Card click ── */
+  document.querySelectorAll('.brand-card[data-brand]').forEach(function(card) {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', function() {
+      /* Only allow whitelisted keys — no DOM injection possible */
+      var key = card.getAttribute('data-brand');
+      if (key && BRAND_WHITELIST[key]) openOverlay(key);
+    });
+  });
+
+});
