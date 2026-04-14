@@ -1,0 +1,9 @@
+{
+  "name": "alhasana-group-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Al-Hasna Group — alhasani.iq",
+  "dependencies": {
+    "nodemailer": "^6.9.13"
+  }
+}

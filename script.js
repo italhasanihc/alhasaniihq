@@ -3,9 +3,9 @@
 ═══════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────
-   CONFIGURATION — mail.php endpoint (same server)
+   CONFIGURATION — Netlify Function endpoint
 ───────────────────────────────────────────────────── */
-var FORM_ENDPOINT = '/mail.php';
+var FORM_ENDPOINT = '/.netlify/functions/contact';
 /* ───────────────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -162,22 +162,28 @@ document.addEventListener('DOMContentLoaded', function () {
     var rawName    = document.getElementById('cName').value.trim();
     var rawEmail   = document.getElementById('cEmail').value.trim();
     var rawMessage = document.getElementById('cMsg').value.trim();
+    var phoneEl    = document.getElementById('cPhone');
+    var rawPhone   = phoneEl ? phoneEl.value.trim() : '';
 
-    /* Build FormData for mail.php */
-    var formData = new FormData();
-    formData.append('name',    rawName);
-    formData.append('email',   rawEmail);
-    formData.append('message', rawMessage);
+    /* Build JSON payload for Netlify Function */
+    var payload = {
+      name:    rawName,
+      email:   rawEmail,
+      message: rawMessage,
+      phone:   rawPhone,
+      _honey:  honey ? honey.value : ''
+    };
 
     fetch(FORM_ENDPOINT, {
-      method: 'POST',
-      body: formData
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      if (data.success === true) {
+      if (data.ok === true) {
         _lastSubmit = Date.now();
-        ['cName','cEmail','cMsg'].forEach(function(id) {
+        ['cName','cEmail','cMsg','cPhone'].forEach(function(id) {
           var f = document.getElementById(id); if (f) f.value = '';
         });
         if (sc) { sc.style.display = 'block'; setTimeout(function() { sc.style.display = 'none'; }, 6000); }
