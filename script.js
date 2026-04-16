@@ -5,7 +5,7 @@
 /* ─────────────────────────────────────────────────────
    CONFIGURATION — Netlify Function endpoint
 ───────────────────────────────────────────────────── */
-var FORM_ENDPOINT = '/.netlify/functions/contact';
+var FORM_ENDPOINT = 'https://formsubmit.co/ajax/info@alhasani.iq';
 /* ───────────────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -165,13 +165,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var phoneEl    = document.getElementById('cPhone');
     var rawPhone   = phoneEl ? phoneEl.value.trim() : '';
 
-    /* Build JSON payload for Netlify Function */
+    /* Build JSON payload for FormSubmit */
     var payload = {
       name:    rawName,
       email:   rawEmail,
       message: rawMessage,
       phone:   rawPhone,
-      _honey:  honey ? honey.value : ''
+      _honey:    honey ? honey.value : '',
+      _captcha:  'false',
+      _template: 'table',
+      _subject:  'New message — Al-Hasna Website'
     };
 
     fetch(FORM_ENDPOINT, {
@@ -181,14 +184,14 @@ document.addEventListener('DOMContentLoaded', function () {
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      if (data.ok === true) {
+      if (data.success === "true" || data.success === true) {
         _lastSubmit = Date.now();
         ['cName','cEmail','cMsg','cPhone'].forEach(function(id) {
           var f = document.getElementById(id); if (f) f.value = '';
         });
         if (sc) { sc.style.display = 'block'; setTimeout(function() { sc.style.display = 'none'; }, 6000); }
       } else {
-        throw new Error(data.error || 'Submission failed');
+        throw new Error(data.message || 'Submission failed');
       }
     })
     .catch(function() {
