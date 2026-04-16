@@ -4,7 +4,6 @@
 
 [build]
   publish   = "."
-  functions = "netlify/functions"
 
 # ── Security headers (all responses) ────────────────────────────────
 [[headers]]
@@ -16,7 +15,7 @@
     Permissions-Policy         = "camera=(), microphone=(), geolocation=(), payment=()"
     Cross-Origin-Opener-Policy = "same-origin"
     Strict-Transport-Security  = "max-age=63072000; includeSubDomains; preload"
-    Content-Security-Policy    = "default-src 'self'; script-src 'self' 'unsafe-inline' /cdn-cgi/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://alhasani.iq; frame-src 'none'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+    Content-Security-Policy    = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://alhasani.iq https://formsubmit.co; frame-src 'none'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
 
 # ── Static asset caching ─────────────────────────────────────────────
 [[headers]]
