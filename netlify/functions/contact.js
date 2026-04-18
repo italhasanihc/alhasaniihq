@@ -149,9 +149,13 @@ exports.handler = async function (event) {
     port:              port,                        /* 465                  */
     secure:            secure,                      /* true                 */
     auth:              { user: SMTP_USER, pass: SMTP_PASS },
-    connectionTimeout: 8000,
-    greetingTimeout:   6000,
-    socketTimeout:     8000,
+    connectionTimeout: 15000,
+    greetingTimeout:   10000,
+    socketTimeout:     15000,
+    /* Prefer IPv4 — Netlify → SMTP often fails on IPv6-only paths to some hosts */
+    family:            4,
+    tls:               { minVersion: 'TLSv1.2' },
+    requireTLS:        !secure,
   });
 
   /* ── Build email ──────────────────────────────────────────────── */
@@ -267,13 +271,14 @@ Sent via https://alhasani.iq`,
       body: JSON.stringify({ ok: true }),
     };
   } catch (err) {
-    console.error('[contact] ✗ SMTP error:', err.message);
+    console.error('[contact] ✗ SMTP error:', err && err.message ? err.message : err);
     return {
       statusCode: 502,
       headers: HEADERS,
       body: JSON.stringify({
         ok: false,
-        error: 'Could not send your message. Please try again or email us directly at info@alhasani.iq.',
+        error:
+          'Could not send your message. Please try again later or email info@alhasani.iq directly.',
       }),
     };
   }

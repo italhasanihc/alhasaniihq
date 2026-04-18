@@ -5,7 +5,7 @@
 /* ─────────────────────────────────────────────────────
    CONFIGURATION — Netlify Function endpoint
 ───────────────────────────────────────────────────── */
-var FORM_ENDPOINT = 'https://formsubmit.co/ajax/info@alhasani.iq';
+var FORM_ENDPOINT = '/.netlify/functions/contact';
 /* ───────────────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -165,16 +165,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var phoneEl    = document.getElementById('cPhone');
     var rawPhone   = phoneEl ? phoneEl.value.trim() : '';
 
-    /* Build JSON payload for FormSubmit */
+    /* Build JSON payload for Netlify Function */
     var payload = {
       name:    rawName,
       email:   rawEmail,
       message: rawMessage,
       phone:   rawPhone,
-      _honey:    honey ? honey.value : '',
-      _captcha:  'false',
-      _template: 'table',
-      _subject:  'New message — Al-Hasna Website'
+      _honey:  honey ? honey.value : ''
     };
 
     fetch(FORM_ENDPOINT, {
@@ -182,21 +179,35 @@ document.addEventListener('DOMContentLoaded', function () {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload)
     })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data.success === "true" || data.success === true) {
+    .then(function(res) {
+      return res.text().then(function(text) {
+        var data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (e) {
+          data = { ok: false, error: 'Server error (' + res.status + '). Please email us directly.' };
+        }
+        return { res: res, data: data };
+      });
+    })
+    .then(function(out) {
+      var data = out.data;
+      if (data && data.ok === true) {
         _lastSubmit = Date.now();
         ['cName','cEmail','cMsg','cPhone'].forEach(function(id) {
           var f = document.getElementById(id); if (f) f.value = '';
         });
         if (sc) { sc.style.display = 'block'; setTimeout(function() { sc.style.display = 'none'; }, 6000); }
       } else {
-        throw new Error(data.message || 'Submission failed');
+        throw new Error((data && data.error) || 'Submission failed');
       }
     })
-    .catch(function() {
+    .catch(function(err) {
       if (er) {
-        er.textContent = 'Something went wrong. Please try again or email us directly.';
+        var msg = err && err.message ? err.message : '';
+        er.textContent = msg && msg !== 'Submission failed'
+          ? msg
+          : 'Something went wrong. Please try again or email us directly.';
         er.style.display = 'block';
       }
     })
