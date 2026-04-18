@@ -4,6 +4,11 @@
 
 [build]
   publish   = "."
+  functions = "netlify/functions"
+
+# Nodemailer works more reliably when traced as real node_modules (not over-bundled).
+[functions]
+  node_bundler = "nft"
 
 # ── Security headers (all responses) ────────────────────────────────
 [[headers]]

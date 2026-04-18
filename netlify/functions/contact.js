@@ -2,11 +2,11 @@
  * netlify/functions/contact.js
  * ─────────────────────────────────────────────────────────────────
  * Al-Hasna Group — alhasani.iq
- * Secure server-side contact form email handler.
+ * Contact form handler for Netlify Functions.
  *
- * Runs inside Netlify Functions (Node.js). Never executed in the
- * browser. All SMTP credentials are read exclusively from Netlify
- * environment variables — nothing is hardcoded here.
+ * Delivery options (set in Netlify → Environment variables):
+ *   • Preferred: RESEND_API_KEY + RESEND_FROM — HTTPS API, works from serverless.
+ *   • Fallback:  SMTP_* + MAIL_TO — many shared hosts block SMTP from cloud IPs → 502.
  * ─────────────────────────────────────────────────────────────────
  */
 
@@ -14,10 +14,6 @@
 
 const nodemailer = require('nodemailer');
 
-/* ── Allowed origins ──────────────────────────────────────────────
-   Accepts requests from the custom domain and the Netlify subdomain.
-   The '*' fallback ensures the function still works during staging.
-──────────────────────────────────────────────────────────────────── */
 const ALLOWED_ORIGINS = [
   'https://alhasani.iq',
   'https://www.alhasani.iq',
@@ -26,7 +22,6 @@ const ALLOWED_ORIGINS = [
 function getCorsOrigin(requestOrigin) {
   if (!requestOrigin) return ALLOWED_ORIGINS[0];
   if (ALLOWED_ORIGINS.includes(requestOrigin)) return requestOrigin;
-  /* Allow any *.netlify.app subdomain for preview deployments */
   if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/.test(requestOrigin)) return requestOrigin;
   return ALLOWED_ORIGINS[0];
 }
@@ -41,24 +36,56 @@ function buildHeaders(requestOrigin) {
   };
 }
 
-/* ── Email regex ──────────────────────────────────────────────────── */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function blank(v) {
   return !v || typeof v !== 'string' || !v.trim();
 }
 
-/* ── Main handler ─────────────────────────────────────────────────── */
+/** From line for Resend: use full "Name <a@b.com>" or bare email. */
+function resendFromLine(resendFrom) {
+  const s = String(resendFrom).trim();
+  if (s.includes('<')) return s;
+  return `"Al-Hasna Group Website" <${s}>`;
+}
+
+/** Send via Resend REST API (no SMTP; reliable from Netlify). */
+async function sendViaResend(mail) {
+  const key = process.env.RESEND_API_KEY;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from:     mail.from,
+      to:       [mail.to],
+      reply_to: mail.replyTo,
+      subject:  mail.subject,
+      text:     mail.text,
+      html:     mail.html,
+    }),
+  });
+  const raw = await res.text();
+  if (res.ok) return;
+  let msg = raw;
+  try {
+    const j = JSON.parse(raw);
+    if (j && j.message) msg = j.message;
+  } catch (e) { /* ignore */ }
+  console.error('[contact] Resend error', res.status, msg);
+  throw new Error(msg || 'Resend send failed');
+}
+
 exports.handler = async function (event) {
   const origin  = (event.headers && event.headers.origin) || '';
   const HEADERS = buildHeaders(origin);
 
-  /* ── CORS preflight ───────────────────────────────────────────── */
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: HEADERS, body: '' };
   }
 
-  /* ── Only POST ────────────────────────────────────────────────── */
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -67,11 +94,10 @@ exports.handler = async function (event) {
     };
   }
 
-  /* ── Parse JSON body ──────────────────────────────────────────── */
   let data;
   try {
     data = JSON.parse(event.body || '{}');
-  } catch {
+  } catch (e) {
     return {
       statusCode: 400,
       headers: HEADERS,
@@ -79,7 +105,6 @@ exports.handler = async function (event) {
     };
   }
 
-  /* ── Honeypot — silent success, bots get no useful feedback ───── */
   if (typeof data._honey === 'string' && data._honey.trim().length > 0) {
     return {
       statusCode: 200,
@@ -88,7 +113,6 @@ exports.handler = async function (event) {
     };
   }
 
-  /* ── Server-side field validation ────────────────────────────── */
   const errors = [];
 
   if (blank(data.name))
@@ -112,11 +136,20 @@ exports.handler = async function (event) {
     };
   }
 
-  /* ── Read credentials from Netlify environment ────────────────── */
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO } = process.env;
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    MAIL_TO,
+    RESEND_API_KEY,
+    RESEND_FROM,
+  } = process.env;
 
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !MAIL_TO) {
-    console.error('[contact] Missing one or more required environment variables.');
+  const useResend = !!(RESEND_API_KEY && RESEND_FROM);
+
+  if (!MAIL_TO) {
+    console.error('[contact] MAIL_TO is not set.');
     return {
       statusCode: 500,
       headers: HEADERS,
@@ -127,7 +160,18 @@ exports.handler = async function (event) {
     };
   }
 
-  /* ── Sanitize values for safe use in HTML email body ─────────── */
+  if (!useResend && (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS)) {
+    console.error('[contact] Missing SMTP_* or use RESEND_API_KEY + RESEND_FROM.');
+    return {
+      statusCode: 500,
+      headers: HEADERS,
+      body: JSON.stringify({
+        ok: false,
+        error: 'Server configuration error. Please contact us directly at info@alhasani.iq.',
+      }),
+    };
+  }
+
   const esc = (s) =>
     String(s)
       .replace(/&/g, '&amp;')
@@ -140,25 +184,6 @@ exports.handler = async function (event) {
   const message = data.message.trim().slice(0, 5000);
   const phone   = (data.phone || '').trim().slice(0, 40);
 
-  /* ── Nodemailer transporter ───────────────────────────────────── */
-  const port   = parseInt(SMTP_PORT, 10);
-  const secure = port === 465;   /* SSL for 465, STARTTLS for 587 */
-
-  const transporter = nodemailer.createTransport({
-    host:              SMTP_HOST,                   /* securemail.aplus.net */
-    port:              port,                        /* 465                  */
-    secure:            secure,                      /* true                 */
-    auth:              { user: SMTP_USER, pass: SMTP_PASS },
-    connectionTimeout: 15000,
-    greetingTimeout:   10000,
-    socketTimeout:     15000,
-    /* Prefer IPv4 — Netlify → SMTP often fails on IPv6-only paths to some hosts */
-    family:            4,
-    tls:               { minVersion: 'TLSv1.2' },
-    requireTLS:        !secure,
-  });
-
-  /* ── Build email ──────────────────────────────────────────────── */
   const phoneRowHtml = phone
     ? `<tr><td style="padding:16px 0 0;border-top:1px solid #eeeeee;">
          <p style="margin:0 0 4px;font-size:11px;letter-spacing:.15em;
@@ -169,14 +194,7 @@ exports.handler = async function (event) {
 
   const phoneText = phone ? `Phone:   ${phone}\n` : '';
 
-  const mailOptions = {
-    from:    `"Al-Hasna Group Website" <${SMTP_USER}>`,
-    to:      MAIL_TO,
-    replyTo: email,
-    subject: `New Contact — ${name}`,
-
-    /* Plain-text fallback */
-    text:
+  const textBody =
 `New contact form message — alhasani.iq
 
 Name:    ${name}
@@ -185,10 +203,9 @@ ${phoneText}Message:
 ${message}
 
 ─────────────────────────
-Sent via https://alhasani.iq`,
+Sent via https://alhasani.iq`;
 
-    /* HTML email */
-    html: `<!DOCTYPE html>
+  const htmlBody = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -202,7 +219,6 @@ Sent via https://alhasani.iq`,
            style="background:#ffffff;border-radius:4px;overflow:hidden;
                   box-shadow:0 2px 8px rgba(0,0,0,.08);max-width:580px;">
 
-      <!-- Header -->
       <tr><td style="background:#1a1814;padding:28px 36px;">
         <p style="margin:0 0 6px;font-size:10px;letter-spacing:.32em;
                   text-transform:uppercase;color:#c09a52;">
@@ -213,7 +229,6 @@ Sent via https://alhasani.iq`,
         </h1>
       </td></tr>
 
-      <!-- Body -->
       <tr><td style="padding:32px 36px;">
         <table width="100%" cellpadding="0" cellspacing="0">
 
@@ -244,7 +259,6 @@ Sent via https://alhasani.iq`,
         </table>
       </td></tr>
 
-      <!-- Footer -->
       <tr><td style="background:#f9f9f9;padding:16px 36px;
                      border-top:1px solid #eeeeee;">
         <p style="margin:0;font-size:11px;color:#aaaaaa;">
@@ -258,20 +272,60 @@ Sent via https://alhasani.iq`,
   </td></tr>
 </table>
 </body>
-</html>`,
+</html>`;
+
+  const subject = `New Contact — ${name}`;
+
+  const mail = {
+    from:    useResend
+      ? resendFromLine(RESEND_FROM)
+      : `"Al-Hasna Group Website" <${SMTP_USER}>`,
+    to:      MAIL_TO,
+    replyTo: email,
+    subject: subject,
+    text:    textBody,
+    html:    htmlBody,
   };
 
-  /* ── Send ─────────────────────────────────────────────────────── */
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`[contact] ✓ sent from ${email}`);
+    if (useResend) {
+      await sendViaResend(mail);
+      console.log(`[contact] ✓ Resend ok from ${email}`);
+    } else {
+      const port   = parseInt(SMTP_PORT, 10);
+      const secure = port === 465;
+
+      const transporter = nodemailer.createTransport({
+        host:              SMTP_HOST,
+        port:              port,
+        secure:            secure,
+        auth:              { user: SMTP_USER, pass: SMTP_PASS },
+        connectionTimeout: 15000,
+        greetingTimeout:   10000,
+        socketTimeout:     15000,
+        family:            4,
+        tls:               { minVersion: 'TLSv1.2' },
+        requireTLS:        !secure,
+      });
+
+      await transporter.sendMail(mail);
+      console.log(`[contact] ✓ SMTP sent from ${email}`);
+    }
+
     return {
       statusCode: 200,
       headers: HEADERS,
       body: JSON.stringify({ ok: true }),
     };
   } catch (err) {
-    console.error('[contact] ✗ SMTP error:', err && err.message ? err.message : err);
+    const code = err && (err.code || err.responseCode);
+    const smtp = err && err.response;
+    console.error(
+      '[contact] ✗ send failed:',
+      err && err.message ? err.message : err,
+      code ? `code=${code}` : '',
+      smtp ? `smtp=${smtp}` : ''
+    );
     return {
       statusCode: 502,
       headers: HEADERS,
