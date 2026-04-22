@@ -142,12 +142,18 @@ ${message}
       headers: JSON_HEADERS,
       body: JSON.stringify({ ok: true, message: "Message sent successfully." }),
     };
-  } catch (err) {
-    console.error("SMTP send failed:", err && err.message, err);
-    return {
-      statusCode: 502,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: "Failed to send message. Please try again later." }),
-    };
-  }
+  } 
+  catch (err) {
+  console.error("FULL ERROR:", err);
+
+  return {
+    statusCode: 500,
+    headers: JSON_HEADERS,
+    body: JSON.stringify({
+      ok: false,
+      error: err.message,
+      stack: err.stack
+    })
+  };
+}
 };
