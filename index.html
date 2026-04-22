@@ -524,18 +524,24 @@
         </div>
       </div>
       <div class="contact-right reveal">
-        <div class="contact-form-wrap">
+        <form class="contact-form-wrap" id="contactForm" action="https://formsubmit.co/info@alhasani.iq" method="POST">
+          <!-- FormSubmit configuration -->
+          <input type="hidden" name="_subject" value="New contact form submission — Al-Hasna Group" />
+          <input type="hidden" name="_template" value="table" />
+          <input type="hidden" name="_captcha" value="false" />
+          <input type="hidden" name="_next" value="https://alhasani.netlify.app/?sent=1" />
+
           <!-- Honeypot anti-spam: bots fill this, humans don't -->
           <input type="text" name="_honey" id="_honey" tabindex="-1" aria-hidden="true" autocomplete="off" style="display:none!important;position:absolute;left:-9999px;" />
 
           <div class="form-group">
             <label class="form-label" for="cName">Full Name</label>
-            <input type="text" id="cName" name="name" class="form-input" placeholder="Your full name" maxlength="100" autocomplete="name" />
+            <input type="text" id="cName" name="name" class="form-input" placeholder="Your full name" maxlength="100" autocomplete="name" required />
             <span class="form-error" id="errName" role="alert"></span>
           </div>
           <div class="form-group">
             <label class="form-label" for="cEmail">Email Address</label>
-            <input type="email" id="cEmail" name="email" class="form-input" placeholder="your@email.com" maxlength="200" autocomplete="email" />
+            <input type="email" id="cEmail" name="email" class="form-input" placeholder="your@email.com" maxlength="200" autocomplete="email" required />
             <span class="form-error" id="errEmail" role="alert"></span>
           </div>
           <div class="form-group">
@@ -545,18 +551,18 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="cMsg">Message</label>
-            <textarea id="cMsg" name="message" class="form-input form-textarea" placeholder="How can we help you?" maxlength="2000"></textarea>
+            <textarea id="cMsg" name="message" class="form-input form-textarea" placeholder="How can we help you?" maxlength="2000" required></textarea>
             <span class="form-error" id="errMsg" role="alert"></span>
           </div>
           <div class="form-btn-wrap">
-            <button type="button" class="form-btn" id="submitBtn">
+            <button type="submit" class="form-btn" id="submitBtn">
               <span id="btnText">Send Message</span>
               <span class="btn-arrow">&#8594;</span>
             </button>
           </div>
           <div class="form-success" id="formSuccess" role="status" aria-live="polite" style="display:none">Thank you. We will be in touch shortly.</div>
           <div class="form-error-msg" id="formError" role="alert" aria-live="polite" style="display:none"></div>
-        </div>
+        </form>
       </div>
     </div>
   </div>
@@ -580,7 +586,7 @@
   <!-- Back to Top -->
   <div id="backTop">↑</div>
 
-  <script src="script.js?v=netlify-contact" defer></script>
+  <script src="script.js?v=formsubmit" defer></script>
   <!-- ═══════════════════════════════════════════════
        BRAND DETAIL OVERLAY
   ═══════════════════════════════════════════════════ -->

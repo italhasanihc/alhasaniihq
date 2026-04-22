@@ -2,12 +2,6 @@
    AL-HASNA GROUP  —  script.js
 ═══════════════════════════════════ */
 
-/* ─────────────────────────────────────────────────────
-   CONFIGURATION — Netlify Function endpoint
-───────────────────────────────────────────────────── */
-var FORM_ENDPOINT = '/.netlify/functions/contact';
-/* ───────────────────────────────────────────────────── */
-
 document.addEventListener('DOMContentLoaded', function () {
 
   /* ── Navbar scroll ── */
@@ -109,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }, 80);
 
-  /* ── Contact form ── */
+  /* ── Contact form (FormSubmit — native POST, no fetch) ── */
   function vf(id, eid, lbl) {
     var f = document.getElementById(id), e = document.getElementById(eid);
     if (!f || !e) return true;
@@ -119,110 +113,39 @@ document.addEventListener('DOMContentLoaded', function () {
     if (id==='cMsg' && v.length<10) { f.classList.add('error'); e.textContent='Message too short.'; return false; }
     return true;
   }
-  /* ── Secure form submission ── */
-  var submitBtn = document.getElementById('submitBtn');
-  var _lastSubmit = 0;       /* timestamp of last successful send */
-  var _submitting = false;   /* in-flight guard */
-  if (submitBtn) submitBtn.addEventListener('click', submitForm);
 
-  function submitForm() {
-    /* Honeypot check — abort silently if bot filled it */
-    var honey = document.getElementById('_honey');
-    if (honey && honey.value) return;
-
-    /* Double-submit guard */
-    if (_submitting) return;
-
-    /* Client-side rate limit: 60 seconds between submissions */
-    var now = Date.now();
-    var er  = document.getElementById('formError');
-    if (_lastSubmit && (now - _lastSubmit) < 60000) {
-      if (er) { er.textContent = 'Please wait before sending another message.'; er.style.display = 'block'; }
-      return;
-    }
-
-    /* Validate all fields — run ALL first so errors show simultaneously */
-    var validName  = vf('cName',  'errName',  'Name');
-    var validEmail = vf('cEmail', 'errEmail', 'Email');
-    var validMsg   = vf('cMsg',   'errMsg',   'Message');
-    if (!validName || !validEmail || !validMsg) return;
-
-    var btn = document.getElementById('submitBtn');
-    var bt  = document.getElementById('btnText');
-    var sc  = document.getElementById('formSuccess');
-    var er  = document.getElementById('formError');
-
-    /* Disable button while sending */
-    _submitting = true;
-    if (bt)  bt.textContent = 'Sending…';
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-    if (er)  { er.textContent = ''; er.style.display = 'none'; }
-
-    /* Collect raw values (validation already passed above) */
-    var rawName    = document.getElementById('cName').value.trim();
-    var rawEmail   = document.getElementById('cEmail').value.trim();
-    var rawMessage = document.getElementById('cMsg').value.trim();
-    var phoneEl    = document.getElementById('cPhone');
-    var rawPhone   = phoneEl ? phoneEl.value.trim() : '';
-
-    /* Build JSON payload for Netlify Function */
-    var payload = {
-      name:    rawName,
-      email:   rawEmail,
-      message: rawMessage,
-      phone:   rawPhone,
-      _honey:  honey ? honey.value : ''
-    };
-
-    fetch(FORM_ENDPOINT, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload)
-    })
-    .then(function(res) {
-      return res.text().then(function(text) {
-        var data;
-        try {
-          data = text ? JSON.parse(text) : {};
-        } catch (e) {
-          data = { ok: false, error: 'Server error (' + res.status + '). Please email us directly.' };
-        }
-        return { res: res, data: data };
-      });
-    })
-    .then(function(out) {
-      var data = out.data;
-      if (data && data.ok === true) {
-        _lastSubmit = Date.now();
-        ['cName','cEmail','cMsg','cPhone'].forEach(function(id) {
-          var f = document.getElementById(id); if (f) f.value = '';
-        });
-        if (sc) { sc.style.display = 'block'; setTimeout(function() { sc.style.display = 'none'; }, 6000); }
-      } else {
-        throw new Error((data && data.error) || 'Submission failed');
+  /* Validate on native submit — block submission if invalid, otherwise let FormSubmit handle it */
+  var contactForm = document.getElementById('contactForm');
+  if (contactForm) {
+    contactForm.addEventListener('submit', function (e) {
+      var validName  = vf('cName',  'errName',  'Name');
+      var validEmail = vf('cEmail', 'errEmail', 'Email');
+      var validMsg   = vf('cMsg',   'errMsg',   'Message');
+      if (!validName || !validEmail || !validMsg) {
+        e.preventDefault();
+        return;
       }
-    })
-    .catch(function(err) {
-      if (er) {
-        var msg = err && err.message ? err.message : '';
-        er.textContent = msg && msg !== 'Submission failed'
-          ? msg
-          : 'Something went wrong. Please try again or email us directly.';
-        er.style.display = 'block';
-      }
-    })
-    .finally(function() {
-      _submitting = false;
-      if (bt)  bt.textContent = 'Send Message';
-      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+      /* Lock the button to prevent double-submit while FormSubmit processes */
+      var btn = document.getElementById('submitBtn');
+      var bt  = document.getElementById('btnText');
+      if (bt)  bt.textContent = 'Sending…';
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
     });
   }
+
+  /* Inline blur/input validation (unchanged UX) */
   ['cName','cEmail','cMsg'].forEach(function(id){
     var f=document.getElementById(id); if(!f) return;
     var em={cName:'errName',cEmail:'errEmail',cMsg:'errMsg'}, lm={cName:'Name',cEmail:'Email',cMsg:'Message'};
     f.addEventListener('blur',function(){vf(id,em[id],lm[id]);});
     f.addEventListener('input',function(){if(f.classList.contains('error'))vf(id,em[id],lm[id]);});
   });
+
+  /* Show success banner if returning from FormSubmit with ?sent=1 */
+  if (window.location.search.indexOf('sent=1') !== -1) {
+    var sc = document.getElementById('formSuccess');
+    if (sc) { sc.style.display = 'block'; setTimeout(function(){ sc.style.display = 'none'; }, 8000); }
+  }
 
 
 
