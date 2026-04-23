@@ -1,0 +1,20 @@
+# Netlify configuration for Al-Hasani Group website
+# Place this file at the ROOT of the repo (same level as index.html)
+
+[build]
+  # The static site itself has no build step — just serves files as-is.
+  # This line tells Netlify where your functions live.
+  functions = "netlify/functions"
+  publish   = "."
+
+[functions]
+  node_bundler = "esbuild"
+
+# Security headers for the static site
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"

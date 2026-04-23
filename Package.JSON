@@ -1,0 +1,12 @@
+{
+  "name": "alhasani-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Al-Hasani Group corporate website — static front-end with Netlify Function mailer",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
+}
