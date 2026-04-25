@@ -4,10 +4,11 @@
 
 /* ─────────────────────────────────────────────────────
    CONFIGURATION
-   Points to the Netlify Function that handles SMTP delivery.
-   The function itself lives at /netlify/functions/contact.js
+   FormSubmit AJAX endpoint — sends submissions directly
+   to the configured email without requiring a backend.
+   Email destination is set in the endpoint URL below.
 ───────────────────────────────────────────────────── */
-var FORM_ENDPOINT = '/.netlify/functions/contact';
+var FORM_ENDPOINT = 'https://formsubmit.co/ajax/italhasanihc@gmail.com';
 /* ───────────────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -163,14 +164,19 @@ document.addEventListener('DOMContentLoaded', function () {
     /* Collect raw values (validation already passed above) */
     var rawName    = document.getElementById('cName').value.trim();
     var rawEmail   = document.getElementById('cEmail').value.trim();
+    var rawPhone   = (document.getElementById('cPhone') || {}).value || '';
     var rawMessage = document.getElementById('cMsg').value.trim();
 
-    /* Send JSON to self-hosted mailer API (server.js handles SMTP) */
+    /* Send JSON to FormSubmit AJAX endpoint.
+       FormSubmit accepts any field names and forwards them in the email. */
     var payload = JSON.stringify({
       name:    rawName,
       email:   rawEmail,
+      phone:   rawPhone.trim(),
       message: rawMessage,
-      _honey:  (document.getElementById('_honey') || {}).value || ''
+      _subject: 'رسالة جديدة من موقع Al-Hasani Group',
+      _template: 'table',
+      _captcha: 'false'
     });
 
     fetch(FORM_ENDPOINT, {
@@ -178,17 +184,31 @@ document.addEventListener('DOMContentLoaded', function () {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body:    payload
     })
-    .then(function(res) { return res.json().then(function(d){ return { ok: res.ok, data: d }; }); })
+    .then(function(res) {
+      /* FormSubmit returns JSON on success; tolerate empty body too. */
+      return res.text().then(function(text) {
+        var data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (e) { data = {}; }
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    })
     .then(function(r) {
       var data = r.data;
-      if (r.ok && (data.success === 'true' || data.success === true)) {
+      /* FormSubmit responds with { success: "true", message: "..." } on success.
+         Also treat any 2xx status as success if body isn't JSON. */
+      var succeeded = r.ok && (
+        data.success === 'true' ||
+        data.success === true ||
+        r.status === 200
+      );
+      if (succeeded) {
         _lastSubmit = Date.now();
-        ['cName','cEmail','cMsg'].forEach(function(id) {
+        ['cName','cEmail','cPhone','cMsg'].forEach(function(id) {
           var f = document.getElementById(id); if (f) f.value = '';
         });
         if (sc) { sc.style.display = 'block'; setTimeout(function() { sc.style.display = 'none'; }, 6000); }
       } else {
-        var msg = (data && data.errors && data.errors.join(' ')) || (data && data.error) || 'Submission failed';
+        var msg = (data && data.errors && data.errors.join(' ')) || (data && data.message) || (data && data.error) || 'Submission failed';
         throw new Error(msg);
       }
     })
